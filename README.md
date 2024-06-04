@@ -1,6 +1,4 @@
-# Laboratorio de MapReduce con MRJOB en AWS EMR
-
-**Realizado por: Santiago Gallego - sgalle16**
+# Laboratorio de MapReduce con MRJOB en AWS 
 
 ## Prerrequisitos
 
@@ -15,19 +13,20 @@
       ```bash
       nano ~/.aws/credentials
       ```
-    - Copie y pegue el bloque de texto con sus credenciales de acceso temporal proporcionadas por AWS Academy.
+     Copie y pegue el bloque de texto con sus credenciales de acceso temporal proporcionadas por AWS Academy.
     - Verifique los permisos del archivo `credentials`:
       ```bash
       chmod 600 ~/.aws/credentials
       ```
-    - Pruebe la configuración de AWS CLI:
-      ```bash
-      aws sts get-caller-identity
-      ```
+
     - Añada la región:
       ```bash
       nano ~/.aws/config
       region: us-east-1
+      ```
+    - Pruebe la configuración de AWS CLI:
+      ```bash
+      aws sts get-caller-identity
       ```
     - Verifique la conexión a AWS:
       ```bash
@@ -45,7 +44,7 @@
       ```bash
       aws s3api put-object --bucket sgalle16-lab6-emr --key logs/
       ```
-## Creación de Cluster EMR via AWS CLI
+## Creación y despliegue de Cluster EMR via AWS CLI
 
 1. **Crear el Cluster EMR**:
     ```bash
@@ -62,30 +61,33 @@
     --scale-down-behavior "TERMINATE_AT_TASK_COMPLETION" \
     --region "us-east-1"
     ```
+    La salida del comando al crear el cluster muestra el ID y ARN de su cluster recién creado.
 2. **Verificar la Creación del Cluster**:
     - Verifica que el clúster se haya creado correctamente:
       ```bash
-      aws emr describe-cluster --cluster-id j-T93J9CTIWOLW
+      aws emr describe-cluster --cluster-id <cluster-id>
       ```
     - Obtenga el DNS público del nodo maestro:
       ```bash
-      aws emr describe-cluster --cluster-id j-5Z2G0RU0BYVC --query "Cluster.MasterPublicDnsName"
+      aws emr describe-cluster --cluster-id <cluster-id> --query "Cluster.MasterPublicDnsName"
       ```
 
-## Conexión al Nodo Maestro
+## Conexión al Master Node y configuración
 
-1. **Conectarse al Master node**:
+1. **Conectarse por SSH al Master node**:
     ```bash
-    ssh -i ~/lab_mapreduce/emr-key.pem hadoop@ec2-3-227-20-175.compute-1.amazonaws.com
+    ssh -i <your-key-name>.pem hadoop@ec2-<master-public-dns>.compute-1.amazonaws.com
     ```
+   Reemplazar `<your-key-name>.pem` con tu archivo de clave para conexión ssh y `<master-public-dns>` con el DNS público del nodo maestro.
 
 ## Acceso a Hue y Gestión de HDFS
 
 1. **Acceso a Hue desde Master Node**:
     ```bash
-    ssh -i ~/emr-key.pem -N -L 8888:ec2-3-227-20-175.compute-1.amazonaws.com:8888 hadoop@ec2-3-227-20-175.compute-1.amazonaws.com
+    ssh -i ~/emr-key.pem -N -L 8888:ec2-<master-public-dns>.compute-1.amazonaws.com:8888 hadoop@ec2-<master-public-dns>.compute-1.amazonaws.com
     ```
     ```bash
+    # Cambiar el puerto de Hue de 14000 a 9870 en el archivo de configuración para la gestión de HDFS y reiniciar el servicio Hue.
     sudo sed -i 's/.ec2.internal:14000/.ec2.internal:9870/' /etc/hue/conf/hue.ini
     sudo systemctl restart hue
     ```
@@ -100,14 +102,14 @@
     sudo systemctl restart hue
     ```
 
-## Instalación de Git en el Master Node
+### Instalación de Git en el Master Node
 
 1. **Instalar Git**:
     ```bash
     sudo yum install git
     ```
 2. **Clonar el Repositorio y Ejecutar Scripts**:
-    - Clonar el repositorio:
+    - Clonar el repositorio y entrar a wordcount:
       ```bash
       cd wordcount
       ```
@@ -129,7 +131,7 @@
     python wordcount-mr.py ../datasets/gutenberg-small/*.txt
     ```
 
-## Subir Archivos y Dataset a HDFS
+### Subir Archivos y Datasets a HDFS
 
 1. **Subir Archivos a HDFS**:
     ```bash
@@ -143,14 +145,14 @@
     hdfs dfs -ls /user/hadoop/input/datasets
     ```
 
-## Ejecución de WordCount MapReduce en Cluster EMR
+### Ejecución de WordCount MapReduce en Cluster EMR
 
-1. **Ejecutar WordCount dentro de wordcount**:
+1. **Ejecutar WordCount**:
     ```bash
     python wordcount-mr.py hdfs:///user/hadoop/input/datasets/gutenberg-small/*.txt -r hadoop --output-dir hdfs:///user/hadoop/output -D mapred.reduce.tasks=10
     ```
 
-## Verificación de la Salida
+### Verificación de la Salida
 
 1. **Descargar y Verificar la Salida**:
     ```bash
@@ -160,7 +162,7 @@
 
 ## Retos de MapReduce con MRJOB en Python
 
-1. **Análisis de datos**:
+1. **Ejecutar Scripts de Análisis de datos en cluster EMR**:
     ```bash
     python <script>-mr.py hdfs:///user/hadoop/input/datasets/otros/<data>
     ```
